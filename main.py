@@ -54,7 +54,7 @@ async def annce(ctx, *args):
 @bc.command()
 async def invite(ctx, *args):
     await ctx.message.delete()
-    await ctx.message.author.send("https://discord.gg/kWFQCQeedX")
+    await ctx.message.author.send("https://discord.gg/7fzHeKq88B")
 
 
 @bc.command()
