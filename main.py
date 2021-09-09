@@ -1,15 +1,29 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import os
 from keep_alive import keep_alive
+import datetime
+import asyncio
 
-bc = commands.Bot(command_prefix='!')
+intents = discord.Intents.default()
+intents.members = True
+
+bc = commands.Bot(command_prefix='!', intents=intents)
 allowed_Mentions = discord.AllowedMentions(everyone=True)
 
 
 @bc.event
 async def on_ready():
     print('We are logged in as {0.user}'.format(bc))
+
+
+@bc.event
+async def on_member_join(member):
+    memrole = discord.utils.get(member.guild.roles, id=884211171555680256)
+    await member.add_roles(memrole)
+    await member.send(
+        "If you enjoy the server, please feel free to donate by purchasing a kit on our website at ~WebsiteHere~. This is how we keep the server up and running, and on a dedicated machine! Welcome to Green Acres Gaming!"
+    )
 
 
 @bc.command()
@@ -101,10 +115,9 @@ async def on_message(message):
         channels = await guild.fetch_channels()
         channel = discord.utils.get(channels, name=message.author.id)
         message1 = message.author
-        embedVar = discord.Embed(
-            title=f'{message.author} has sent a new message',
-            description=message.content,
-            color=0xff0000)
+        embedVar = discord.Embed(title=f'{message1} has sent a new message',
+                                 description=message.content,
+                                 color=0xff0000)
         category = discord.utils.get(guild.categories, id=884233102837317632)
         embedMod = discord.Embed(
             title='Information for the mods',
@@ -119,10 +132,10 @@ async def on_message(message):
             color=0xff0000)
 
         if channel == None:  #Channel doesn't exist yet. So create it
-            channel = await guild.create_text_channel(
-                message.author.name + "#" + message.author.discriminator,
-                category=category,
-                id=message.author.name + "#" + message.author.discriminator)
+            rtn = message.author.name + "#" + message.author.discriminator
+            channel = await guild.create_text_channel(rtn,
+                                                      category=category,
+                                                      id=rtn)
 
             await message.author.send(
                 "Your ticket has been created in " + guild.name +
@@ -140,6 +153,55 @@ async def on_message(message):
 @commands.has_permissions(manage_messages=True)
 async def close(ctx):
     await ctx.channel.delete()
+
+
+@bc.command()
+async def getdate(ctx):
+    timestamp = datetime.datetime.now()
+    await ctx.message.delete()
+    await ctx.message.author.send(timestamp)
+
+
+@bc.command()
+@commands.has_permissions(manage_guild=True)
+async def mute(ctx, member: discord.Member):
+    guild = bc.get_guild(883760937427931166)
+    logchannel = bc.get_channel(885521893434724372)
+    muter = await guild.fetch_roles()
+    muterole = discord.utils.get(muter, id=885512978336727110)
+    targetmember = str(member)
+    moderator = str(ctx.message.author)
+    await ctx.message.delete()
+    await member.add_roles(muterole)
+    await ctx.message.author.send("You have muted " + member.name + " in " +
+                                  guild.name + ".")
+    await logchannel.send(targetmember + ' has been muted by ' + moderator +
+                          '.')
+
+
+@bc.command(pass_context=True)
+@commands.has_permissions(manage_guild=True)
+async def unmute(ctx, member: discord.Member):
+    guild = bc.get_guild(883760937427931166)
+    logchannel = bc.get_channel(885524999740473434)
+    muter = await guild.fetch_roles()
+    muterole = discord.utils.get(muter, id=885512978336727110)
+    targetmember = str(member)
+    moderator = str(ctx.message.author)
+    await ctx.message.delete()
+    await member.remove_roles(muterole)
+    await ctx.message.author.send("You have unmuted " + targetmember + " in " +
+                                  guild.name + ".")
+    await logchannel.send(targetmember + ' has been unmuted by ' + moderator +
+                          '.')
+
+
+@bc.command(pass_context=True)
+async def clear(ctx, number):
+    number = int(
+        number)  #Converting the amount of messages to delete to an integer
+    await ctx.message.delete()
+    await ctx.channel.purge(limit=number)
 
 
 keep_alive()
